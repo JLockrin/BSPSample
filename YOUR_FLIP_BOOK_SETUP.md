@@ -233,3 +233,4 @@ Your flip book is fully configured and ready to go. Just refresh your browser at
 
 The effect should now look **exactly like thumbing through a physical book** with realistic blurred content flying by! 📚✨
 
+
