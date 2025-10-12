@@ -37,7 +37,7 @@ const pagesMap: Record<number, string> = {
             :class="[
               'px-6 py-3 rounded-lg font-medium transition-colors',
               showInline 
-                ? 'bg-gradient-to-r from-orange-500 to-purple-600 text-white' 
+                ? 'bg-gradient-to-r from-[#F68E15] to-[#CB5588] text-white' 
                 : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
             ]"
           >
@@ -49,7 +49,7 @@ const pagesMap: Record<number, string> = {
             :class="[
               'px-6 py-3 rounded-lg font-medium transition-colors',
               !showInline 
-                ? 'bg-gradient-to-r from-orange-500 to-purple-600 text-white' 
+                ? 'bg-gradient-to-r from-[#F68E15] to-[#CB5588] text-white' 
                 : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
             ]"
           >
@@ -87,7 +87,7 @@ const pagesMap: Record<number, string> = {
         </p>
         <button
           @click="open"
-          class="px-8 py-4 bg-gradient-to-r from-orange-500 to-purple-600 text-white rounded-lg text-lg font-medium hover:shadow-lg transition-shadow"
+          class="px-8 py-4 bg-gradient-to-r from-[#F68E15] to-[#CB5588] text-white rounded-lg text-lg font-medium hover:shadow-lg transition-shadow"
         >
           Open Flip Book Modal
         </button>

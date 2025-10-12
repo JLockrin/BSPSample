@@ -132,3 +132,4 @@ The component uses Tailwind CSS classes, so you can customize colors, spacing, e
 
 **Questions?** Check the inline comments in the code files - they're comprehensive!
 
+

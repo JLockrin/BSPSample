@@ -18,7 +18,7 @@ Make sure you have these files in your landing page project:
     <!-- Trigger button -->
     <button 
       @click="showFlipBook = true"
-      class="px-6 py-3 bg-gradient-to-r from-orange-500 to-purple-600 text-white rounded-lg"
+      class="px-6 py-3 bg-gradient-to-r from-[#F68E15] to-[#CB5588] text-white rounded-lg"
     >
       See Inside the Playbook
     </button>
@@ -158,4 +158,5 @@ watch(showFlipBook, (isOpen) => {
 ## That's It!
 
 The component is completely self-contained and handles all the flip logic, keyboard navigation, and animations internally. Just drop it in your modal and you're good to go! 🎉
+
 

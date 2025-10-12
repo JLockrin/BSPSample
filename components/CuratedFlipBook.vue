@@ -23,16 +23,19 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const cPos = ref(Math.max(0, Math.min(props.startAt, props.curatedIndices.length - 1)));
-const showIdx = ref(props.curatedIndices[cPos.value]);   // absolute index being shown
+const showIdx = ref(props.curatedIndices[cPos.value] ?? 0);   // absolute index being shown
 const isFlipping = ref(false);
 const flipDirection = ref<'forward' | 'backward' | null>(null);
 let intervalId: number | null = null;
 
 const canGoPrev = computed(() => cPos.value > 0 && !isFlipping.value);
 const canGoNext = computed(() => cPos.value < props.curatedIndices.length - 1 && !isFlipping.value);
+const canJumpToStart = computed(() => cPos.value > 0 && !isFlipping.value);
+const canJumpToEnd = computed(() => cPos.value < props.curatedIndices.length - 1 && !isFlipping.value);
 const progress = computed(() => `${cPos.value + 1} / ${props.curatedIndices.length}`);
 
-function srcFor(idx: number) {
+function srcFor(idx: number | undefined) {
+  if (idx === undefined) return '';
   // First check if this is a curated landing page
   if (props.pagesMap[idx]) {
     return props.pagesMap[idx];
@@ -63,8 +66,8 @@ function go(dir: 1 | -1) {
   const target = cPos.value + dir;
   if (target < 0 || target >= props.curatedIndices.length) return;
 
-  const from = props.curatedIndices[cPos.value];
-  const to = props.curatedIndices[target];
+  const from = props.curatedIndices[cPos.value]!;
+  const to = props.curatedIndices[target]!;
   const { path, dir: d } = buildPath(from, to);
 
   isFlipping.value = true;
@@ -76,7 +79,7 @@ function go(dir: 1 | -1) {
 
   intervalId = window.setInterval(() => {
     if (i < path.length) {
-      showIdx.value = path[i++];
+      showIdx.value = path[i++] ?? 0;
     } else {
       showIdx.value = to;
       if (intervalId) { clearInterval(intervalId); intervalId = null; }
@@ -86,6 +89,27 @@ function go(dir: 1 | -1) {
       document.documentElement.style.removeProperty('--flip-skew');
     }
   }, props.flipIntervalMs) as unknown as number;
+}
+
+function jumpToStart() {
+  if (isFlipping.value || cPos.value === 0) return;
+  // Jump directly without animation
+  cPos.value = 0;
+  showIdx.value = props.curatedIndices[0] ?? 0;
+}
+
+function jumpToEnd() {
+  if (isFlipping.value || cPos.value === props.curatedIndices.length - 1) return;
+  // Jump directly without animation
+  cPos.value = props.curatedIndices.length - 1;
+  showIdx.value = props.curatedIndices[cPos.value] ?? 0;
+}
+
+function jumpToPage(targetPos: number) {
+  if (isFlipping.value || targetPos === cPos.value) return;
+  // Jump directly to the clicked page without animation
+  cPos.value = targetPos;
+  showIdx.value = props.curatedIndices[targetPos] ?? 0;
 }
 
 // keyboard
@@ -128,7 +152,7 @@ onBeforeUnmount(() => {
           v-if="srcFor(showIdx)"
           :key="`img-${showIdx}`"
           :src="srcFor(showIdx)"
-          :alt="`Slide ${showIdx + 1}`"
+          :alt="`Slide ${(showIdx ?? 0) + 1}`"
           class="w-full h-full object-contain"
           :class="{ 
             'will-change-transform': isFlipping,
@@ -165,7 +189,7 @@ onBeforeUnmount(() => {
           <div class="absolute inset-0 opacity-40"
                style="background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 2px, transparent 2px, transparent 6px);">
           </div>
-          <span class="relative z-10 text-xs opacity-70">Page {{ showIdx + 1 }}</span>
+          <span class="relative z-10 text-xs opacity-70">Page {{ (showIdx ?? 0) + 1 }}</span>
         </div>
 
             <!-- Minimal overlay effects - let the actual slide images show through -->
@@ -197,45 +221,127 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-        <!-- Left tap zone -->
+        <!-- Left arrow button - positioned outside the frame -->
         <button
           type="button"
           @click="go(-1)"
           :disabled="!canGoPrev"
           aria-label="Previous"
-          class="absolute inset-y-0 left-0 w-12 md:w-16 flex items-center justify-start
-                 bg-gradient-to-r from-black/10 to-transparent hover:from-black/20
-                 disabled:opacity-40 disabled:cursor-not-allowed"
+          class="absolute top-1/2 -translate-y-1/2 -left-6 md:-left-14 z-10
+                 w-12 h-12 md:w-14 md:h-14 rounded-full
+                 bg-white dark:bg-neutral-800 
+                 shadow-lg hover:shadow-xl
+                 flex items-center justify-center
+                 transition-all duration-200
+                 hover:scale-110
+                 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
         >
-          <svg class="h-7 w-7 m-2 text-white/80" viewBox="0 0 24 24" fill="none">
-            <path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg class="h-6 w-6 md:h-7 md:w-7 text-neutral-700 dark:text-white" viewBox="0 0 24 24" fill="none">
+            <path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
 
-        <!-- Right tap zone -->
+        <!-- Right arrow button - positioned outside the frame -->
         <button
           type="button"
           @click="go(1)"
           :disabled="!canGoNext"
           aria-label="Next"
-          class="absolute inset-y-0 right-0 w-12 md:w-16 flex items-center justify-end
-                 bg-gradient-to-l from-black/10 to-transparent hover:from-black/20
-                 disabled:opacity-40 disabled:cursor-not-allowed"
+          class="absolute top-1/2 -translate-y-1/2 -right-6 md:-right-14 z-10
+                 w-12 h-12 md:w-14 md:h-14 rounded-full
+                 bg-white dark:bg-neutral-800
+                 shadow-lg hover:shadow-xl
+                 flex items-center justify-center
+                 transition-all duration-200
+                 hover:scale-110
+                 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
         >
-          <svg class="h-7 w-7 m-2 text-white/80" viewBox="0 0 24 24" fill="none">
-            <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg class="h-6 w-6 md:h-7 md:w-7 text-neutral-700 dark:text-white" viewBox="0 0 24 24" fill="none">
+            <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
         </div>
       </div>
 
       <!-- Bottom bar -->
-      <div class="mt-3 flex items-center justify-between text-sm text-neutral-500">
-        <div class="flex items-center gap-2">
-          <span class="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-          <span>Curated preview</span>
+      <div class="mt-4 space-y-3">
+        <!-- Visual progress indicator -->
+        <div class="relative w-full max-w-md mx-auto px-2">
+          <!-- Base track -->
+          <div class="relative h-1 bg-neutral-300 dark:bg-neutral-700 rounded-full overflow-visible">
+            <!-- Progress fill -->
+            <div 
+              class="absolute top-0 left-0 h-full bg-gradient-to-r from-[#F68E15] to-[#CB5588] rounded-full transition-all duration-500 ease-out"
+              :style="{ width: `${((curatedIndices[cPos] || 0) / (totalPages - 1)) * 100}%` }"
+            />
+            
+            <!-- Curated page markers -->
+            <div 
+              v-for="(pageIdx, idx) in props.curatedIndices"
+              :key="`marker-${pageIdx}`"
+              class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 cursor-pointer group"
+              :style="{ left: `${(pageIdx / (props.totalPages - 1)) * 100}%` }"
+              @click="jumpToPage(idx)"
+              :title="`Page ${pageIdx + 1}`"
+            >
+              <!-- Marker dot -->
+              <div 
+                class="rounded-full transition-all duration-300"
+                :class="idx === cPos 
+                  ? 'w-3 h-3 bg-white dark:bg-white ring-2 ring-[#F68E15] shadow-lg' 
+                  : 'w-2 h-2 bg-neutral-400 dark:bg-neutral-600 group-hover:bg-neutral-500 dark:group-hover:bg-neutral-500 group-hover:scale-125'"
+              />
+            </div>
+          </div>
+
+          <!-- Page number tooltip on hover -->
+          <div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div class="bg-neutral-800 dark:bg-neutral-700 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+              Page {{ (showIdx ?? 0) + 1 }} of {{ totalPages }}
+            </div>
+          </div>
         </div>
-        <div class="font-medium">{{ progress }}</div>
+
+        <!-- Bottom controls row -->
+        <div class="flex items-center justify-between text-sm text-neutral-500">
+          <!-- Jump buttons -->
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              @click="jumpToStart"
+              :disabled="!canJumpToStart"
+              aria-label="Jump to beginning"
+              class="p-2 rounded-lg bg-neutral-200 dark:bg-neutral-800 
+                     hover:bg-neutral-300 dark:hover:bg-neutral-700
+                     transition-colors
+                     disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Jump to beginning"
+            >
+              <svg class="h-4 w-4 text-neutral-700 dark:text-neutral-300" viewBox="0 0 24 24" fill="none">
+                <path d="M11 19l-7-7 7-7m8 14l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            
+            <button
+              type="button"
+              @click="jumpToEnd"
+              :disabled="!canJumpToEnd"
+              aria-label="Jump to end"
+              class="p-2 rounded-lg bg-neutral-200 dark:bg-neutral-800 
+                     hover:bg-neutral-300 dark:hover:bg-neutral-700
+                     transition-colors
+                     disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Jump to end"
+            >
+              <svg class="h-4 w-4 text-neutral-700 dark:text-neutral-300" viewBox="0 0 24 24" fill="none">
+                <path d="M13 5l7 7-7 7M5 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Progress counter -->
+          <div class="font-medium">{{ progress }}</div>
+        </div>
       </div>
     </div>
   </div>

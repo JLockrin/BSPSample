@@ -13,3 +13,4 @@ Place your `.webp` slide images in this folder.
 
 These correspond to the curated pages shown in the flip book. The component will simulate flipping through the missing pages (5, 6, 7) to create the hyper-flip effect.
 
+
